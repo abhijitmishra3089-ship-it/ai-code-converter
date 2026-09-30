@@ -1,15 +1,15 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-
-dotenv.config();
-
+import ConnectDb from "./config/db.js";
+import authRoutes from './Routes/AuthRoutes.js'
 const app = express();
-
+ConnectDb();
 app.use(cors());
 app.use(express.json());
-
+app.use('/api/auth', authRoutes)
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
@@ -17,24 +17,12 @@ const ai = new GoogleGenAI({
 app.post("/convert", async (req, res) => {
   try {
     const { sourceLanguage, targetLanguage, code } = req.body;
-
     const prompt = `
-Convert the following ${sourceLanguage} code into ${targetLanguage}.
-
-Rules:
-- Return ONLY the converted code.
-- Do not add explanations.
-- Keep the same functionality.
-
-Code:
-${code}
-`;
-
+Convert the following ${sourceLanguage} code into ${targetLanguage}.${code}`;
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
     });
-
     res.json({
       result: response.text,
     });
@@ -42,8 +30,6 @@ ${code}
     console.error(error);
     res.status(500).json({
       error:error.message,
-      // satck:error.stack
-      // error: "Conversion failed",
     });
   }
 });
